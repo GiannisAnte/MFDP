@@ -23,15 +23,8 @@ class User:
     def balance(self):
         return self.__balance
 
-    @balance.setter
-    def balance(self, value: float):
-        self.__balance = value
-
-    def deduct_balance(self, amount):
-        if self.__balance >= amount:
-            self.__balance -= amount
-            return True
-        return False
+    def add_balance(self, amount):
+        self.__balance += amount
 
     def history(self, action):
         self.__activity_history[action] = self.__balance
