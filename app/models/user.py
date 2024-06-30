@@ -3,7 +3,7 @@ class User:
                  first_name: str, last_name: str, balance: float, role: str):
         self.__id = user_id
         self.__username = username
-        self.__password = password
+        self.__password = password #hash_password
         self.__email = email
         self.__first_name = first_name
         self.__last_name = last_name
