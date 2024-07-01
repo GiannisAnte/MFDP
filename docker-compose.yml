@@ -22,6 +22,20 @@ services:
     depends_on:
       - app
 
+  database:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data:owned
+    ports:
+      - "5432:5432"
+    env_file:
+      ./app/.env
+#    environment:
+#      - POSTGRES_DB=${POSTGRES_DB}
+#      - POSTGRES_USER=${POSTGRES_USER}
+#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    restart: on-failure
+
   rabbitmq:
     image: rabbitmq:3.13-management
     volumes:
@@ -33,17 +47,5 @@ services:
       ./app/.env
     restart: on-failure
 
-  database:
-    image: postgres:15-alpine
-    volumes:
-      - postgres_volume:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-#    env_file:
-#      ./app/.env
-#    environment:
-#      - POSTGRES_DB=${POSTGRES_DB}
-#      - POSTGRES_USER=${POSTGRES_USER}
-#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    restart: on-failure
+
 
