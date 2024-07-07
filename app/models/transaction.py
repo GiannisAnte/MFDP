@@ -1,15 +1,14 @@
-from datetime import datetime
+from sqlmodel import Field, SQLModel
+from typing import List, Optional
 
-from app.models.user import User
+
+class Transaction(SQLModel, table=True):
+    __tablename__ = "transcaction"
+    transaction_id: int = Field(default=None, primary_key=True)
+    user_id: int = Field(default=None, foreign_key="user.id")
+    date: str
+    transaction_type: str
+    amount: float
 
 
-class Transaction:
-    """transaction_type - пополнение или списание"""
-    def __init__(self, transaction_id: int, user_id: int, amount: float, transaction_time: datetime,
-                 transaction_type: str):
-        self.__id = transaction_id
-        self.__user_id = user_id
-        self.__amount = amount
-        self.__time = transaction_time
-        self.__type = transaction_type
 
