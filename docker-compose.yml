@@ -12,6 +12,8 @@ services:
       - ./app/.env
     volumes:
       - ./app:/app
+    depends_on:
+      - database
 
   web-proxy:
     build:
@@ -24,8 +26,8 @@ services:
 
   database:
     image: postgres:15-alpine
-    volumes:
-      - postgres_volume:/var/lib/postgresql/data:owned
+  #  volumes:
+  #    - postgres_volume:/var/lib/postgresql/data:owned
     ports:
       - "5432:5432"
     env_file:
