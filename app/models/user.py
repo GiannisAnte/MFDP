@@ -8,7 +8,7 @@ class User(SQLModel, table=True):
     username: str
     password: str
     email: str
-    balance: float = Field(default=50.0)
+    # balance: float = Field(default=50.0)
     role: str = Field(default='user')
 
     # @property

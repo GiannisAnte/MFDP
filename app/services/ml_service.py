@@ -1,34 +1,16 @@
-class PredictionTask:
-    def __init__(self, task_id: int, user_id: int, model, data: list, amount: float):
-        self.__task_id = task_id
-        self.__user_id = user_id
-        self.__model = model
-        self.__data = data
-        self.__amount = amount
-        self.__result = None
+from models.ml_model import Model
+from sqlalchemy.orm import Session
+from typing import List, Optional
 
-    def get_task_id(self) -> int:
-        return self.__task_id
 
-    def get_user_id(self) -> int:
-        return self.__user_id
+def get_model_by_id(model_id: int, session) -> Optional[Model]:
+    """Возврат модели по id"""
+    model = session.query(Model).where(Model.id == model_id).first()
+    return model
+    
 
-    def get_model(self):
-        return self.__model
+def get_model_by_name(model_name: str, session) -> Optional[Model]:
+    """Возврат модели по имени"""
+    model = session.query(Model).where(Model.name == model_name).first()
+    return model
 
-    def get_data(self) -> list:
-        return self.__data
-
-    def get_cost(self) -> float:
-        return self.__amount
-
-    def execute(self) -> bool:
-        # реализация выполнения задачи предсказания
-        ...
-
-    def validate_data(self, data: list) -> bool:
-        # Проверка данных на ошибки
-        return True
-
-    def get_result(self):
-        return self.__result

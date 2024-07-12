@@ -1,8 +1,10 @@
-class MLModel:
-    def __init__(self, id_model, name):
-        self.__id = id_model
-        self.__name = name
+from sqlmodel import SQLModel, Field
+from typing import Optional
 
-    def predict(self, data):
-        ...
+class Model(SQLModel, table=True):
+    __tablename__ = "mlmodel"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    path: str
+    cost: float
 
