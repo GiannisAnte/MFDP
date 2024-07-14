@@ -32,18 +32,18 @@ async def signin(username: str, password: str, session=Depends(get_session)):
         return {"message": "User signed in successfully"}
 
 #получение списка всех юзеров
-@user_route.get('/get_all_users', response_model=List[User])
+@user_route.get('/all_users', response_model=List[User])
 async def get_all_users_route(session=Depends(get_session)) -> list:
     return get_all_users(session)
 
 #получение баланса юзера по id
-@user_route.get('/get_balance/{user_id}', response_model=float)
+@user_route.get('/balance/{user_id}', response_model=float)
 async def get_balance_user(user_id: int, session=Depends(get_session)) -> float:
     balance = get_balance(user_id, session)
     return balance
 
 #пополнение баланса
-@user_route.post('/add_coin/{user_id}')
+@user_route.put('/add_coin/{user_id}')
 async def add_coin(user_id: int,
                       amount: float,
                       session=Depends(get_session)):
@@ -51,7 +51,7 @@ async def add_coin(user_id: int,
     return {"message": f"Coin added to user (id {user_id})"}
 
 #уменьшение баланса
-@user_route.post('/deduct_coin/{user_id}')
+@user_route.put('/deduct_coin/{user_id}')
 async def deduct_coin(user_id: int,
                       amount: float,
                       session=Depends(get_session)):
@@ -59,12 +59,12 @@ async def deduct_coin(user_id: int,
     return {"message": f"Coin deduct from user (id {user_id})"}
 
 #запрос истории транзакций юзера
-@user_route.get('/get_transactions/{user_id}')
+@user_route.get('/user_transactions/{user_id}')
 async def get_transactions(user_id: int, session=Depends(get_session)):
     return tr_history(user_id, session)
 
 #запрос истории задач от юзера
-@user_route.get('/get_history/{user_id}')
+@user_route.get('/user_history/{user_id}')
 async def get_history(user_id: int, session=Depends(get_session)):
     return task_history(user_id, session)
 
