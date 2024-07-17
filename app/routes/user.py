@@ -63,10 +63,10 @@ async def deduct_coin(user_id: int,
 async def get_transactions(user_id: int, session=Depends(get_session)):
     return tr_history(user_id, session)
 
-#запрос истории задач от юзера
-@user_route.get('/user_history/{user_id}')
-async def get_history(user_id: int, session=Depends(get_session)):
-    return task_history(user_id, session)
+# #запрос истории задач от юзера
+# @user_route.get('/user_history/{user_id}')
+# async def get_history(user_id: int, session=Depends(get_session)):
+#     return task_history(user_id, session)
 
 
 

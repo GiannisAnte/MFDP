@@ -1,7 +1,7 @@
 import pika
 import uuid
 import json
-from rbmq.worker_conn import get_connection
+from worker_conn import get_connection
 
 
 class RpcClient(object):
@@ -34,7 +34,11 @@ class RpcClient(object):
                 correlation_id=self.corr_id,
             ),
             body = message)
+        # while self.response is None:
+        #     self.connection.process_data_events()
+        # response_json = json.loads(self.response)
+        # return response_json
         while self.response is None:
             self.connection.process_data_events()
-        response_json = json.loads(self.response)
-        return response_json
+        print('Return success response')
+        return json.loads(self.response)
