@@ -7,6 +7,7 @@ class Task(SQLModel, table=True):
     action_id: int = Field(default=None, primary_key=True)
     user_id: int = Field(default=None, foreign_key="user.id")
     amount: float
+    input_data: str
     response: str
     
 

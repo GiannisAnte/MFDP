@@ -7,7 +7,8 @@ from datetime import datetime
 from models.balance import Balance
 
 
-def create_user(username: str, email: str, password: str, session):
+
+def create_user(username: str, email: str, password: str, session)-> dict:
     is_exist_name = session.query(User).filter_by(username=username).first()
     is_exist_email = session.query(User).filter_by(email=email).first()
     if is_exist_name is not None or is_exist_email is not None:
