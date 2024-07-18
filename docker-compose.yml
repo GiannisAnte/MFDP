@@ -23,7 +23,7 @@ services:
     restart: always
     volumes:
       - ./app:/app
-    working_dir: /app/
+    # working_dir: /app/
     command: python -u rpc_server.py
     depends_on:
       rabbitmq:

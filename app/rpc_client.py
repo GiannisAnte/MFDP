@@ -34,11 +34,11 @@ class RpcClient(object):
                 correlation_id=self.corr_id,
             ),
             body = message)
-        # while self.response is None:
-        #     self.connection.process_data_events()
-        # response_json = json.loads(self.response)
-        # return response_json
-        while self.response is None:
-            self.connection.process_data_events()
-        print('Return success response')
-        return json.loads(self.response)
+        try:
+            while self.response is None:
+                self.connection.process_data_events(time_limit=1)  #таймаут обработки
+            print('Return success response')
+            return json.loads(self.response)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None 
