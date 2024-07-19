@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from database.database import init_db
 import uvicorn
 from routes.home import home_route
@@ -7,14 +8,23 @@ from routes.ml import ml_route
 
 
 app = FastAPI()
-app.include_router(home_route)
-app.include_router(user_route)
-app.include_router(ml_route)
 
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 def on_startup():
     init_db()
+
+app.include_router(home_route)
+app.include_router(user_route)
+app.include_router(ml_route)
 
 
 if __name__ == '__main__':

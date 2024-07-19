@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from database.database import get_session
 from models.user import User
-from services.user_service import create_user, authenticate, get_user_by_username, get_all_users
+from services.user_service import create_user, get_user_by_username, get_all_users
 from services.balance_servise import get_balance, add_to_balance, deduct_from_balance
 from services.task_service import task_history
 from services.transaction_service import tr_history
+from auth.hash_password import verify_hash
+from auth.jwt_handler import create_access_token
+from auth.authenticate import authenticate
 from typing import List
 
 user_route = APIRouter(tags=['User'])
@@ -25,11 +28,14 @@ async def signin(username: str, password: str, session=Depends(get_session)):
     user = get_user_by_username(username, session)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
-    response = authenticate(username, password, session)
-    if response is False:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Password is incorrect")
-    if response is True:
-        return {"message": "User signed in successfully"}
+    if verify_hash(password, user.password):
+        access_token = create_access_token(user.username)
+        return {"access_token": access_token, "token_type": "Bearer"}
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid details passed."
+    )
 
 #получение списка всех юзеров
 @user_route.get('/all_users', response_model=List[User])

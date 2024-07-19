@@ -6,6 +6,9 @@ from pydantic import ValidationError
 from datetime import datetime
 from models.balance import Balance
 
+from auth.hash_password import create_hash
+
+
 
 
 def create_user(username: str, email: str, password: str, session)-> dict:
@@ -15,10 +18,10 @@ def create_user(username: str, email: str, password: str, session)-> dict:
         return {'Error: User already exists'}
 
     # Запись нового пользователя
-    password = hash(password)# хэширование
+    h_password = create_hash(password=password)# хэширование
     new_user = User(username=username,
                     email=email,
-                    password=password)
+                    password=h_password)
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
@@ -45,13 +48,13 @@ def get_user_by_username(username: str, session) -> Optional[User]:
     user = session.query(User).where(User.username == username).first()
     return user
 
-def authenticate(username: str, password: str, session) -> bool:
-    """Пара login-password"""
-    user = session.query(User).where(User.username == username).first()
-    if int(user.password) == int(hash(password)):
-        return True
-    else:
-        return False
+# def authenticate(username: str, password: str, session) -> bool:
+#     """Пара login-password"""
+#     user = session.query(User).where(User.username == username).first()
+#     if int(user.password) == int(hash(password)):
+#         return True
+#     else:
+#         return False
 # Старые методы, когда класс user столбец balance  
 # def add_to_balance(user_id: int, amount: float, session) -> None:
 #     """Увеличение баланса юзера"""

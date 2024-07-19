@@ -5,6 +5,7 @@ from  database.database import get_session
 from models.task import Task
 import joblib
 from shema.input_data import InputData
+from auth.authenticate import authenticate
 
 
 ml_route = APIRouter(tags=['ML'])
@@ -19,9 +20,13 @@ except:
 
 
 #запрос истории задач от юзера
-@ml_route.get('/task_history/{user_id}', response_model=List[Task])
-async def get_history(user_id: int, session=Depends(get_session)) -> List[Dict[str, Any]]:
-    return task_history(user_id, session)
+# @ml_route.get('/task_history/{user_id}', response_model=List[Task])
+# async def get_history(user_id: int, session=Depends(get_session)) -> List[Dict[str, Any]]:
+#     return task_history(user_id, session)
+@ml_route.get('/task_history/', response_model=List[Task])
+async def get_history(user: str = Depends(authenticate), session=Depends(get_session)) -> List[Dict[str, Any]]:
+    print(user.user_id)
+    return task_history(user.user_id, session)
 
 @ml_route.post('/predict', response_model=Dict[str, str])
 async def predict(user_id: int, input_data: InputData, session=Depends(get_session)):
