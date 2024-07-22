@@ -9,7 +9,8 @@ settings.set_wide()
 settings.create_navbar()
 cookie_manager = settings.get_manager()
 access_token = cookie_manager.get("access_token")
-settings.token_check(access_token)
+# settings.token_check(access_token)
+settings.admin_check(access_token)
 
 st.title("КАБИНЕТ АДМИНИСТРАТОРА")
 
