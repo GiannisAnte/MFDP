@@ -60,7 +60,7 @@ with b3:
         st.switch_page("pages/predict.py")
 with b4:
     if st.button("      Последний запрос        "):        
-        st.switch_page("pages/predict.py")
+        st.switch_page("pages/last_task.py")
 
 if st.button("Выйти из аккаунта", use_container_width=True):
     cookie_manager.delete("access_token")
