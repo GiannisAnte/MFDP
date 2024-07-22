@@ -14,6 +14,9 @@ try:
 except:
     model = None
 
+def get_all_his(session) -> List[Task]:
+    """Возврат запросов всех пользователей"""
+    return session.query(Task).all()
 
 def task_log(request: Task, session) -> None:
     """Запись действия в БД"""

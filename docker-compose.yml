@@ -37,6 +37,19 @@ services:
       - "443:443"
     depends_on:
       - app
+      - webui
+    
+  webui:
+    build: ./app/ui/
+    image: ui
+    volumes:
+      - ./app/ui/:/ui
+    command: streamlit run web.py
+    ports:
+      - "8501:8501" # Порт Streamlit
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_HOST=0.0.0.0
 
   database:
     image: postgres:15-alpine

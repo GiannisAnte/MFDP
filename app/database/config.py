@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     POSTGRES_USER: Optional[str] = None
     POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_DB: Optional[str] = None
+    SECRET_KEY: Optional[str] = None
+    COOKIE_NAME: Optional[str] = None
+
 
     @property
     def DATABASE_URL_asyncpg(self):
