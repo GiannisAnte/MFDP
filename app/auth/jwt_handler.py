@@ -9,8 +9,8 @@ settings = get_settings()
 SECRET_KEY = settings.SECRET_KEY
 
 
-def create_access_token(username: str) -> str:
-    payload = {"username": username,
+def create_access_token(id: int) -> str:
+    payload = {"id": id,
     "expires": time.time() + 3600}
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     return token

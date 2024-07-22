@@ -5,7 +5,7 @@ from  database.database import get_session
 from models.task import Task
 import joblib
 from shema.input_data import InputData
-from auth.authenticate import authenticate
+from auth.authenticate import authenticate_cookie
 
 
 ml_route = APIRouter(tags=['ML'])
@@ -23,11 +23,12 @@ except:
 # @ml_route.get('/task_history/{user_id}', response_model=List[Task])
 # async def get_history(user_id: int, session=Depends(get_session)) -> List[Dict[str, Any]]:
 #     return task_history(user_id, session)
-@ml_route.get('/task_history/', response_model=List[Task])
-async def get_history(user: str = Depends(authenticate), session=Depends(get_session)) -> List[Dict[str, Any]]:
-    print(user.user_id)
-    return task_history(user.user_id, session)
+@ml_route.get('/task_history/{token}', response_model=List[Task])
+async def get_history(token: str, session=Depends(get_session)) -> List[Dict[str, Any]]:
+    user_id = int(await authenticate_cookie(token))
+    return task_history(user_id, session)
 
-@ml_route.post('/predict', response_model=Dict[str, str])
-async def predict(user_id: int, input_data: InputData, session=Depends(get_session)):
+@ml_route.post('/predict/{token}', response_model=Dict[str, str])
+async def predict(token: str, input_data: InputData, session=Depends(get_session)):
+    user_id = int(await authenticate_cookie(token))
     return task_predict(user_id, input_data, session)
