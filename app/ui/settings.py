@@ -21,6 +21,17 @@ def set_wide():
     st.set_page_config(layout="wide")
 
 
+def admin_check(token):
+    response = requests.get('http://app:8080/auth/' + str(token))
+    if int(response.status_code) == 200 and requests.get('http://app:8080/user/name/',
+                            params={'token': token}).json() == 'admin':
+        pass
+    else:
+        st.error('Вы не авторизованы, как администратор, пожалуйста, пройдите процедуру авторизации')
+        if st.button('Войти', use_container_width=True):
+            st.switch_page("web.py")
+        st.stop()
+
 def token_check(token):
     response = requests.get('http://app:8080/auth/' + str(token))
     if int(response.status_code) == 200:
