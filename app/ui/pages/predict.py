@@ -44,7 +44,11 @@ if st.button('ОТПРАВИТЬ ЗАПРОС (20 coins)'):
         else:
             st.error('Возможно у вас диабет')   
     else:
-        st.error('Error in prediction')
+        if response.status_code in [409]:
+            error_desc = response.json()["detail"]
+            st.error("""Ваш баланс меньше стоимости запроса""")
+        else:
+            st.error('Error in prediction')
 
 if st.button("Выйти из аккаунта", use_container_width=True):
     cookie_manager.delete("access_token")

@@ -76,7 +76,7 @@ async def deduct_coin(user_id: int,
                       amount: float,
                       session=Depends(get_session)):
     deduct_from_balance(user_id, amount, session)
-    return {"message": f"Coin deduct from user (id {user_id})"}
+    return {"message": f"Coin deduct from user"}
 
 #запрос истории транзакций юзера
 @user_route.get('/transactions/{token}', response_model=List[Transaction])
