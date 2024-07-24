@@ -18,11 +18,6 @@ try:
 except:
     model = None
 
-
-#запрос истории задач от юзера
-# @ml_route.get('/task_history/{user_id}', response_model=List[Task])
-# async def get_history(user_id: int, session=Depends(get_session)) -> List[Dict[str, Any]]:
-#     return task_history(user_id, session)
 @ml_route.get('/task_history/{token}', response_model=List[Task])
 async def get_history(token: str, session=Depends(get_session)) -> List[Dict[str, Any]]:
     user_id = int(await authenticate_cookie(token))
@@ -32,3 +27,4 @@ async def get_history(token: str, session=Depends(get_session)) -> List[Dict[str
 async def predict(token: str, input_data: InputData, session=Depends(get_session)):
     user_id = int(await authenticate_cookie(token))
     return task_predict(user_id, input_data, session)
+

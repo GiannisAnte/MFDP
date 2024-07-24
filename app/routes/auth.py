@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from  database.database import get_session
 from auth.authenticate import authenticate_cookie
 
-auth_router = APIRouter(tags=['ML'])
+auth_router = APIRouter(tags=['User'])
 
 
 @auth_router.get("/auth/{token}")

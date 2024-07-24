@@ -37,7 +37,7 @@ class RpcClient(object):
         try:
             while self.response is None:
                 self.connection.process_data_events(time_limit=1)  #таймаут обработки
-            print('Return success response')
+            print(f'Return success response ({self.corr_id})')
             return json.loads(self.response)
         except Exception as e:
             print(f"An error occurred: {e}")
