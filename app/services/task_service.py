@@ -1,11 +1,16 @@
 from models.task import Task
+from models.user import User
 from shema.input_data import InputData
+from shema.Tasks import Tasks
 from typing import List
 import rpc_client
 from fastapi import APIRouter, HTTPException, status, Depends
 from services.user_service import get_user
 from services.balance_servise import deduct_from_balance, get_balance
 import joblib
+from sqlalchemy import join
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 global model
 try:
@@ -14,9 +19,28 @@ try:
 except:
     model = None
 
-def get_all_his(session) -> List[Task]:
+def get_all_his(session) -> List[Tasks]:
     """Возврат запросов всех пользователей"""
-    return session.query(Task).all()
+    # return session.query(Task).all()
+    tasks = (
+    session.query(User, Task)
+    .join(Task, User.id == Task.user_id)
+    .all()
+    )
+
+    tasks_data = []
+    for user, task in tasks:
+        tasks_data.append({
+        'id запроса': task.action_id,
+        'id юзера': task.user_id,
+        'имя юзера': user.username,
+        'стоимость запроса': task.amount,
+        'исходные данные пользователя': task.input_data,
+        'ответ модели': task.response,
+    })
+
+    return JSONResponse(content=jsonable_encoder(tasks_data))
+
 
 def task_log(request: Task, session) -> None:
     """Запись действия в БД"""

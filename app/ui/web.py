@@ -79,6 +79,9 @@ with col2:
                                  params={'username': username,
                                          'email': email,
                                          'password': password})
+            if response.status_code in [422]:
+                error_desc = response.json()["detail"]
+                st.error("""Неверно задан email""")
             if response.status_code == 200:
                 message = response.json()
                 st.success('Пользователь зарегистрирован успешно', icon="✅")

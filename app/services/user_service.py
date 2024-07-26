@@ -5,6 +5,9 @@ from typing import List, Optional
 from pydantic import ValidationError
 from datetime import datetime
 from models.balance import Balance
+from sqlalchemy import join
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 from auth.hash_password import create_hash
 
@@ -46,8 +49,27 @@ def create_user(username: str, email: str, password: str, session)-> dict:
 
 
 def get_all_users(session) -> List[User]:
-    """Возврат списка всех пользователей"""
-    return session.query(User).all()
+    """Возврат списка всех пользователей, тут мы объединяем две таблицы, 
+    чтобы плюсом получить баланс из одноименной таблицы"""
+    # return session.query(User).all()
+    users = (
+    session.query(User, Balance)
+    .join(Balance, User.id == Balance.user_id)
+    .all()
+    )
+
+    user_data = []
+    for user, balance in users:
+        user_data.append({
+        'id пользователя': user.id,
+        'имя пользователя': user.username,
+        'пароль': user.password,
+        'email': user.email,
+        'баланс': balance.user_balance,
+    })
+
+    return JSONResponse(content=jsonable_encoder(user_data))
+    # return users
 
 
 def get_user(user_id: int, session) -> Optional[User]:

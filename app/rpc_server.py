@@ -5,7 +5,7 @@ import json
 from worker_conn import connection_params
 import joblib
 
-
+# Загрузка модели
 with open("files_for_ml/diabet_rfc.pkl", 'rb') as file:
         global model
         model = joblib.load(file)

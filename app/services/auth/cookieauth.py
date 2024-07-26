@@ -8,12 +8,6 @@ import os
 from dotenv import load_dotenv
 from database.config import get_settings
 
-# путь к .env файлу
-# env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app', '.env'))
-
-# load_dotenv(env_path)
-
-# COOKIE_NAME = os.environ['COOKIE_NAME']
 settings = get_settings()
 
 class OAuth2PasswordBearerWithCookie(OAuth2):

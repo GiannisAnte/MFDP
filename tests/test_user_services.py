@@ -7,8 +7,8 @@ api = 'http://localhost:8080/'
 users = test_users()
 
 def test_list_of_all_users():
-    '''получение списка всех юзеров'''
-    endpoint = '/user/all_users'
+    '''Тест получения списка всех юзеров'''
+    endpoint = '/user/users'
     url = api + endpoint
     response = requests.get(url)
     assert response.status_code == 200
@@ -17,15 +17,14 @@ def test_list_of_all_users():
     assert all(isinstance(user, dict) for user in users)
 
     for user in users:
-        assert 'id' in user
-        assert 'username' in user
+        assert 'id пользователя' in user
+        assert 'имя пользователя' in user
         assert 'email' in user
-        assert 'password' in user
-        assert 'role' in user
+        assert 'пароль' in user
 
 def test_list_of_all_transactions():
-    '''получение списка всех транзакций'''
-    endpoint = '/user/all_tr'
+    '''Тест получения списка всех транзакций'''
+    endpoint = '/user/transaction_history'
     url = api + endpoint
     response = requests.get(url)
     assert response.status_code == 200
@@ -40,8 +39,8 @@ def test_list_of_all_transactions():
         assert 'transaction_type' in transaction
 
 def test_list_of_all_tasks():
-    '''получение списка всех запросов'''
-    endpoint = '/user/all_his'
+    '''Тест получения списка всех запросов'''
+    endpoint = '/user/tasks_history'
     url = api + endpoint
     response = requests.get(url)
     assert response.status_code == 200
@@ -63,7 +62,7 @@ def test_list_of_all_tasks():
     [(user['token']) for user in users]
 )
 def test_check_balance(token):
-    '''получение баланса юзера'''
+    '''Тест получения баланса юзера'''
     endpoint = '/user/balance/'
     url = api + endpoint
     response = requests.get(url, 
@@ -77,8 +76,8 @@ def test_check_balance(token):
     [(user['token']) for user in users]
 )
 def test_check_add(token):
-    '''пополнение'''
-    endpoint = '/user/add_coin/'
+    '''Тест пополнения баланса'''
+    endpoint = '/user/coin/'
     url = api + endpoint
     amount = 10
     response = requests.get(url, 
@@ -92,7 +91,7 @@ def test_check_add(token):
     [(user['token']) for user in users]
 )
 def test_check_history(token):
-    '''запрос истории транзакций юзера'''
+    '''Тест запроса истории транзакций юзера'''
     endpoint = '/user/transactions/'
     url = api + endpoint + token
     response = requests.get(url)

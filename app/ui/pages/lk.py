@@ -33,7 +33,7 @@ amount = st.number_input('Пополнить баланс', step=10)
 
 
 if st.button("Пополнить"):
-    response = requests.post('http://app:8080/user/add_coin/',
+    response = requests.post('http://app:8080/user/coin/',
                             params={'token': access_token,
                                     'amount': amount})
     print(response.json())
@@ -44,7 +44,7 @@ if st.button("Пополнить"):
 
 if requests.get('http://app:8080/user/name/',
                             params={'token': access_token}).json() == 'admin':
-    if st.button("Админ"):    
+    if st.button("Кабинет администратора"):    
         st.switch_page("pages/admin.py")
             
 b1, b2, b3, b4 = st.columns([4, 4, 4, 4])

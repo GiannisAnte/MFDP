@@ -2,10 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database.database import init_db
 import uvicorn
-from routes.home import home_route
-from routes.user import user_route
-from routes.ml import ml_route
-from routes.auth import auth_router
+from routes.home.get import home_route
+from routes.user.get import get_user_route
+from routes.user.put import put_user_route
+from routes.user.post import post_user_route
+from routes.ml.get import get_ml_route
+from routes.ml.post import post_ml_route
+from routes.user.get import auth_router
 
 
 app = FastAPI()
@@ -24,8 +27,11 @@ def on_startup():
     init_db()
 
 app.include_router(home_route)
-app.include_router(user_route, prefix='/user')
-app.include_router(ml_route)
+app.include_router(get_user_route, prefix='/user')
+app.include_router(put_user_route, prefix='/user')
+app.include_router(post_user_route, prefix='/user')
+app.include_router(get_ml_route)
+app.include_router(post_ml_route)
 app.include_router(auth_router)
 
 

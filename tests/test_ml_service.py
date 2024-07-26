@@ -1,7 +1,6 @@
 import requests
 import pytest
 from tests.settings import test_users, test_data
-import logging
 
 
 api = 'http://localhost:8080/'
@@ -12,7 +11,7 @@ users = test_users()
     [(user['token']) for user in users]
 )
 def test_check_task(token):
-    '''запрос истории запросов юзера'''
+    '''Тест выгрузки истории запросов юзера'''
     endpoint = '/task_history/'
     url = api + endpoint + token
     response = requests.get(url)
@@ -26,10 +25,11 @@ def test_check_task(token):
     [(user['token']) for user in users]
 )
 def test_predict(token):
+    '''Тест запроса к модели и получение ответа от нее'''
     endpoint = '/predict'
     url = api + endpoint + token
     data = test_data
-    response = requests.get(url, json=data)
+    response = requests.post(url, json=data)
     assert response.status_code == 200
     assert response.json()['predicted_status'] in ('0', '1') 
 

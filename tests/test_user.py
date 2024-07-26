@@ -15,7 +15,7 @@ users = test_users()
         ]
     )
 def test_signup(username, email, password):
-    '''тест регистрации'''
+    '''Тест регистрации'''
     endpoint = '/user/signup'
     url = api + endpoint
     response = requests.post(url,
@@ -35,7 +35,7 @@ def test_signup(username, email, password):
         ]
     )
 def test_signin(username, password):
-    '''тест авторизации'''
+    '''Тест авторизации'''
     endpoint = '/user/signin'
     url = api + endpoint
     response = requests.post(url,
