@@ -1,7 +1,7 @@
 from models.task import Task
 from models.user import User
-from shema.input_data import InputData
-from shema.Tasks import Tasks
+from shemas.input_data import InputData
+from shemas.Tasks import Tasks
 from typing import List
 import rpc_client
 from fastapi import APIRouter, HTTPException, status, Depends

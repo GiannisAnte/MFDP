@@ -1,6 +1,6 @@
 from models.transaction import Transaction
 from models.user import User
-from shema.Transactions import Transactions
+from shemas.Transactions import Transactions
 from typing import List
 from sqlalchemy import join
 from fastapi.responses import JSONResponse

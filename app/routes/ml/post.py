@@ -2,7 +2,7 @@ from typing import List, Dict
 from services.task_service import task_predict
 from fastapi import APIRouter, Depends
 from  database.database import get_session
-from shema.input_data import InputData
+from shemas.input_data import InputData
 from auth.authenticate import authenticate_cookie
 
 post_ml_route = APIRouter(tags=['ML'])

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from database.database import get_session
-from shema.Users import Users
-from shema.Tasks import Tasks
+from shemas.Users import Users
+from shemas.Tasks import Tasks
 from models.transaction import Transaction
 from models.task import Task
 from services.user_service import get_all_users, get_username
@@ -10,7 +10,7 @@ from services.transaction_service import tr_history, get_all_tr
 from services.task_service import get_all_his
 from typing import List
 from auth.authenticate import authenticate_cookie
-from shema.Transactions import Transactions
+from shemas.Transactions import Transactions
 
 auth_router = APIRouter(tags=['User'])
 get_user_route = APIRouter(tags=['User'])
