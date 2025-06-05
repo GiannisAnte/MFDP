@@ -1,0 +1,108 @@
+services:
+  # redis:
+  #   image: redis:7
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+      - rabbitmq
+      - worker
+      # - redis
+
+  web-proxy:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+      # - webui
+
+  webui:
+    build:
+      context: ./app/view
+      dockerfile: Dockerfile
+    container_name: streamlit_view
+    volumes:
+      - ./app/view/:/view
+    working_dir: /view
+    command: streamlit run Home.py --server.port=8501 --server.headless=true
+    ports:
+      - "8501:8501"
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_HOST=0.0.0.0
+    depends_on:
+      - app
+
+  worker:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    command: ["celery", "-A", "worker.celery_app:celery_app", "worker", "--loglevel=info"]
+    # command:
+    #   # - /usr/local/bin/wait-for-it.sh
+    #   # - rabbitmq:5672
+    #   - "--"
+    #   - celery
+    #   - "-A"
+    #   - worker.celery_app:celery_app
+    #   - worker
+    #   - "--loglevel=info"
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app:/app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - database
+      - rabbitmq
+    deploy:
+      replicas: 3
+
+  database:
+    image: postgres:15-alpine
+    env_file:
+      - ./app/.env
+    volumes:
+      - postgres_volume1:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    env_file:
+      - ./app/.env
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_volume1:

@@ -1,0 +1,33 @@
+fastapi==0.111.0
+uvicorn==0.30.1
+sqlalchemy==2.0.31
+pydantic_settings==2.3.4
+sqlmodel==0.0.19
+psycopg==3.2.1
+psycopg2-binary==2.9.9
+pandas==2.2.2
+# pandas==2.0.3
+numpy==2.0.2
+# numpy==1.25.2
+# scikit-learn==1.2.2
+pika==1.3.2
+streamlit==1.36.0
+python-jose==3.3.0
+passlib==1.7.4
+extra-streamlit-components==0.1.71
+pytest==8.3.1
+clearml
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.4.0+cpu
+torchvision==0.19.0+cpu
+celery>=5.4,<6.0
+pillow==10.0.1
+python-multipart>=0.0.7
+aiofiles==23.1.0
+pytest
+scikit-learn==1.6.1
+xgboost==2.1.4
+catboost==1.2.8
+joblib==1.5.0
+
+
