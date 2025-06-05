@@ -1,134 +1,100 @@
 from models.user import User
-from models.task import Task
-from services.transaction_service import transaction_log
 from typing import List, Optional
 from pydantic import ValidationError
 from datetime import datetime
-from models.balance import Balance
-from sqlalchemy import join
+from sqlmodel import Session, select
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from core.hash_password import HashPassword#create_hash
+from uuid import UUID
+from models.fire_event import FireEvent
+from models.prediction import Prediction
 
-from auth.hash_password import create_hash
+hash_password = HashPassword()
 
-
-
-
-def create_user(username: str, email: str, password: str, session)-> dict:
-    is_exist_name = session.query(User).filter_by(username=username).first()
-    is_exist_email = session.query(User).filter_by(email=email).first()
-    if is_exist_name is not None or is_exist_email is not None:
-        return {'Error: User already exists'}
+def create_user(username: str, email: str, password: str, session) -> dict:
+    """Создание пользователя"""
+    if session.query(User).filter(User.username == username).first():
+        return {"error": "Username already exists"}
+    if session.query(User).filter(User.email == email).first():
+        return {"error": "Email already exists"}
     
-    # Запись нового пользователя
-    h_password = create_hash(password=password)# хэширование
-    if username == 'admin':
-        admin = User(username=username, email=email, password=h_password, role='admin')
-        session.add(admin)
-        session.commit()
-        session.refresh(admin)
-        user_id = get_user_by_username(username, session).id
-        user_balance = Balance(user_id=user_id, user_balance=100)
-        session.add(user_balance)
-        session.commit()
-        session.refresh(user_balance) 
-    else:
-        new_user = User(username=username,
-                        email=email,
-                        password=h_password)
-        session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
-        #получение имени уже созданного юзера и создание его баланса
-        user_id = get_user_by_username(username, session).id
-        user_balance = Balance(user_id=user_id, user_balance=20)
-        session.add(user_balance)
-        session.commit()
-        session.refresh(user_balance)
-        return {"message": "User successfully registered!"}
+    hashed_pw = hash_password.create_hash(password)
+    new_user = User(
+        username=username,
+        email=email,
+        hashed_password=hashed_pw,
+        is_superuser=False
+    )
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    return {"message": "User successfully registered!"}
 
 
 def get_all_users(session) -> List[User]:
-    """Возврат списка всех пользователей, тут мы объединяем две таблицы, 
-    чтобы плюсом получить баланс из одноименной таблицы"""
-    # return session.query(User).all()
-    users = (
-    session.query(User, Balance)
-    .join(Balance, User.id == Balance.user_id)
-    .all()
+    """Возврат списка всех пользователей"""
+    return session.query(User).all()
+
+def get_user(user_id: UUID, session: Session) -> Optional[User]:
+    """
+    Возвращает User по его UUID, либо None, если не найден.
+    """
+    statement = select(User).where(User.id == user_id)
+    result = session.exec(statement).first()
+    return result
+
+def get_user_by_username(username: str, session: Session) -> Optional[User]:
+    return session.query(User).filter(User.username == username).first()
+
+
+def get_username(user_id: UUID, session: Session) -> Optional[str]:
+    user = session.query(User).filter(User.id == user_id).first()
+    return user.username if user else None
+
+
+
+def get_all_his(session: Session, user_id: UUID) -> List[dict]:
+    records = (
+        session.query(Prediction, FireEvent)
+        .join(FireEvent, FireEvent.id == Prediction.fire_event_id)
+        .filter(FireEvent.created_by == user_id)
+        .all()
     )
 
-    user_data = []
-    for user, balance in users:
-        user_data.append({
-        'id пользователя': user.id,
-        'имя пользователя': user.username,
-        'пароль': user.password,
-        'email': user.email,
-        'баланс': balance.user_balance,
-    })
-
-    return JSONResponse(content=jsonable_encoder(user_data))
-    # return users
-
-
-def get_user(user_id: int, session) -> Optional[User]:
-    """Возврат юзера, если он существует"""
-    user = session.query(User).where(User.id == user_id).first()
-    return user
-
-def get_user_by_username(username: str, session) -> Optional[User]:
-    """Возврат юзера, если он существует"""
-    user = session.query(User).where(User.username == username).first()
-    return user
-
-def get_username(user_id: int, session) -> Optional[User]:
-    """Возврат name, если он существует"""
-    user = session.query(User).where(User.id == user_id).first()
-    name = user.username
-    return name
-
-# def authenticate(username: str, password: str, session) -> bool:
-#     """Пара login-password"""
-#     user = session.query(User).where(User.username == username).first()
-#     if int(user.password) == int(hash(password)):
-#         return True
-#     else:
-#         return False
-# Старые методы, когда класс user столбец balance  
-# def add_to_balance(user_id: int, amount: float, session) -> None:
-#     """Увеличение баланса юзера"""
-#     user = get_user(user_id, session)
-#     new_transaction = Transaction(user_id=user_id,
-#                             amount=amount,
-#                             transaction_type='add')
-#     transaction_log(new_transaction, session)
-#     user.balance += amount
-#     session.add(user, new_transaction)
-#     session.commit()
-#     session.refresh(user, new_transaction)
+    return [
+        {
+            "fire_event_id": pred.fire_event_id,
+            "source": fire.source,
+            "latitude": fire.latitude,
+            "longitude": fire.longitude,
+            "payload": fire.payload,
+            "variant": pred.variant,
+            "result": pred.result,
+            "score": pred.score,
+        }
+        for pred, fire in records
+    ]
 
 
-# def get_balance(user_id: int, session) -> float:
-#     """Возврат баланса юзера"""
-#     user = get_user(user_id, session)
-#     return user.balance
+# def get_all_his(session):
+#     tasks = (
+#     session.query(Prediction, FireEvent)
+#     .join(FireEvent, FireEvent.id == Prediction.fire_event_id)
+#     .all()
+#     )
 
-# def deduct_from_balance(user_id: int, amount: float, session) -> None:
-#     """Уменьшение баланса юзера"""
-#     user = get_user(user_id, session)
-#     new_transaction = Transaction(user_id=user_id,
-#                             amount=amount,
-#                             transaction_type='deduct')
-#     transaction_log(new_transaction, session)
-#     user.balance -= amount
-#     session.add(user)
-#     session.commit()
-#     session.refresh(user)
+#     data = []
+#     for prediction, fire_event in tasks:
+#         data.append({
+#             "fire_event_id": prediction.fire_event_id,
+#             "source": fire_event.source,
+#             "latitude": fire_event.latitude,
+#             "longitude": fire_event.longitude,
+#             "payload": fire_event.payload,
+#             "variant": prediction.variant,
+#             "result": prediction.result,
+#             "score": prediction.score,
+#         })
 
-
-
-
-
-
-
+#     return JSONResponse(content=jsonable_encoder(data))

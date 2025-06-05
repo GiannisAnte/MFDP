@@ -1,13 +1,13 @@
-version: "3"
-
-volumes:
-  postgres_volume:
-  rabbitmq_volume:
-
 services:
+  # redis:
+  #   image: redis:7
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
   app:
     build:
-      context: ./app/
+      context: .
+      dockerfile: app/Dockerfile
     env_file:
       - ./app/.env
     volumes:
@@ -16,23 +16,9 @@ services:
       - "8080:8080"
     depends_on:
       - database
-  
-  rpc_server:
-    build: ./app/
-    image: rpc_server
-    env_file:
-      - ./app/.env
-    restart: always
-    volumes:
-      - ./app:/app
-    # working_dir: /app/
-    deploy:
-      mode: replicated
-      replicas: 2
-    command: python -u rpc_server.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - rabbitmq
+      - worker
+      # - redis
 
   web-proxy:
     build:
@@ -42,49 +28,81 @@ services:
       - "443:443"
     depends_on:
       - app
-      - webui
-    
+      # - webui
+
   webui:
-    build: ./app/ui/
-    image: ui
+    build:
+      context: ./app/view
+      dockerfile: Dockerfile
+    container_name: streamlit_view
     volumes:
-      - ./app/ui/:/ui
-    command: streamlit run web.py
+      - ./app/view/:/view
+    working_dir: /view
+    command: streamlit run Home.py --server.port=8501 --server.headless=true
     ports:
-      - "8501:8501" # Порт Streamlit
+      - "8501:8501"
     environment:
       - STREAMLIT_SERVER_PORT=8501
       - STREAMLIT_SERVER_HOST=0.0.0.0
+    depends_on:
+      - app
+
+  worker:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    command: ["celery", "-A", "worker.celery_app:celery_app", "worker", "--loglevel=info"]
+    # command:
+    #   # - /usr/local/bin/wait-for-it.sh
+    #   # - rabbitmq:5672
+    #   - "--"
+    #   - celery
+    #   - "-A"
+    #   - worker.celery_app:celery_app
+    #   - worker
+    #   - "--loglevel=info"
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app:/app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - database
+      - rabbitmq
+    deploy:
+      replicas: 3
 
   database:
     image: postgres:15-alpine
-  #  volumes:
-  #    - postgres_volume:/var/lib/postgresql/data:owned
+    env_file:
+      - ./app/.env
+    volumes:
+      - postgres_volume1:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    env_file:
-      ./app/.env
-#    environment:
-#      - POSTGRES_DB=${POSTGRES_DB}
-#      - POSTGRES_USER=${POSTGRES_USER}
-#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    volumes:
-      - rabbitmq_volume:/var/lib/rabbitmq
+    env_file:
+      - ./app/.env
     ports:
       - "5672:5672"
       - "15672:15672"
-    env_file:
-      ./app/.env
     restart: on-failure
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
-
-
+volumes:
+  postgres_volume1:

@@ -1,0 +1,14 @@
+{
+    "МЧС России, Нефтегазовые компании": {
+        "name": "cb_xgb",
+        "model_path": "ml/stacking_xgb_cb_model",
+        "threshold": 0.174,
+        "description": "CatBoost + XGBoost, F1-ориентированная модель"
+    },
+    "Рослесхоз": {
+        "name": "cb_rf",
+        "model_path": "ml/stacking_cb_rf_model",
+        "threshold": 0.172,
+        "description": "CatBoost + RF, сбалансированная модель (Youden’s J)"
+    }
+}

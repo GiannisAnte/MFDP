@@ -1,57 +1,45 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel, Session
-# from database.config import get_settings
-# from models.user import User
-from services.user_service import create_user, get_user, get_all_users, authenticate
-from services.balance_servise import add_to_balance, get_balance, deduct_from_balance
-from services.transaction_service import tr_history
-from database.database import get_session, init_db, engine
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+from database.database import init_db
+from fastapi.staticfiles import StaticFiles
+from utils.clear_static import clear_static_images
+from ml.core.load_models import load_model_from_clearml
+from ml.core.load_cnn_weights import load_cnn_weights_from_clearml
+from endpoints.home.get import home_route
+from endpoints.user.get import auth_router, get_user_route
+from endpoints.user.post import post_user_route
+from endpoints.ml.post import router_cnn, router_w, router_ml
 
+app = FastAPI()
 
-if __name__ == "__main__":
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    test_user_1 = ('test_user_1', 'test1@mail.ru', 'test1')
-    test_user_2 = ('test_user_2', 'test2@mail.ru', 'test2')
-    test_user_3 = ('test_user_3', 'test3@mail.ru', 'test3')
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.on_event("startup")
+def on_startup():
     init_db()
+    clear_static_images()
+    load_model_from_clearml(project_name="Fires", task_name="Upload Stacking CB+RF-LR Model",artifact_name='stacking_cb_rf_model.pkl', destination_dir="ml/", target_filename='stacking_cb_rf_model')
+    load_model_from_clearml(project_name="Fires", task_name="Upload Stacking XGB+CB-LR Model",artifact_name='stacking_xgb_cb_model.pkl', destination_dir="ml/", target_filename='stacking_xgb_cb_model')
+    load_cnn_weights_from_clearml(project_name="Fires", task_name="Load CNN Weights",destination_dir="ml/")
+
+app.include_router(home_route)
+app.include_router(get_user_route, prefix='/user')
+app.include_router(post_user_route, prefix='/user')
+app.include_router(auth_router)
+app.include_router(router_cnn)
+app.include_router(router_w)
+app.include_router(router_ml)
 
 
-    with Session(engine) as session:
-        # Создание пользователей
-        print('Создание пользователей')
-        create_user(*test_user_1, session)
-        create_user(*test_user_2, session)
-        create_user(*test_user_3, session)
-        users = get_all_users(session)
-    for user in users:
-        print(f'id: {user.id} - {user.email}')
-
-    # Аутентификация
-    print('Аутентификация')
-    auth = []
-    for user in users:
-        auth.append(authenticate(user.username, 'test1', session))
-    print(auth)
-
-    # Пополнение и уменьшение
-    print('Пополнение и уменьшение баланса')
-    print(f'1 - {get_balance(1, session)}, 2 - {get_balance(2, session)}, 3 - {get_balance(3, session)}')
-
-    add_to_balance(2, 112.0, session)
-    print(f'1 - {get_balance(1, session)}, 2 - {get_balance(2, session)}, 3 - {get_balance(3, session)}')
-
-    deduct_from_balance(3, 15.0, session)
-    print(f'1 - {get_balance(1, session)}, 2 - {get_balance(2, session)}, 3 - {get_balance(3, session)}')
-
-    # Запрос истории действий
-    print('Запрос истории действий юзера с id=3')
-    print(tr_history(3, session))
-
-    
-
-    
-
-
-
+if __name__ == '__main__':
+    uvicorn.run('main:app', host='0.0.0.0', port=8080, reload=True)
