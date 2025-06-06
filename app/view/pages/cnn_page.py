@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 from extra_streamlit_components import CookieManager
 import settings
+import time
+import pandas as pd
 
 
 COOKIE_NAME = settings.COOKIE_NAME
@@ -53,6 +55,45 @@ if uploaded_file is not None:
             if response.status_code == 200:
                 event_id = response.json().get("event_id")
                 st.success(f"Изображение отправлено. ID задачи: {event_id}")
+                prediction_url = f"http://app:8080/predictions/{event_id}"
+                placeholder = st.empty()
+                with st.spinner("Ожидаем завершения прогноза..."):
+                    for _ in range(20):
+                        pred_resp = requests.get(prediction_url, cookies={COOKIE_NAME: access_token}, timeout=5)
+                        if pred_resp.status_code == 200:
+                            prediction = pred_resp.json()
+                            # st.json(prediction)
+                            if prediction.get("status") == "SUCCESS":
+                                # st.success("Прогноз готов!")
+                                # st.write(f"Результат: {prediction.get('result')}")
+                                # st.write(f"Вероятность: {prediction.get('score')}")
+                                # st.json(prediction.get("payload"))
+                                result = prediction.get("result", "—")
+                                score = str(round(prediction.get("score", 0), 2)) + '%'
+                                payload_data = prediction.get("payload", {})
+
+                                # st.session_state["fire_result"] = result
+                                # st.session_state["fire_score"] = f"{score} %"
+
+                            # Основные результаты
+                                main_table = pd.DataFrame({
+                                    "Параметр": ["Результат", "Вероятность"],
+                                    "Значение": [result, score]
+                                })
+                                placeholder.success("Прогноз готов!")
+                                st.table(main_table)
+
+                            # Дополнительные данные
+                                if payload_data:
+                                    st.subheader("Дополнительные данные:")
+                                    # df_payload = pd.DataFrame(payload_data.items(), columns=["Параметр", "Значение"])
+                                    df_payload = pd.DataFrame(
+                                        [(k, str(v)) for k, v in payload_data.items()],
+                                        columns=["Параметр", "Значение"]
+                                    )
+                                    st.table(df_payload)
+                                break
+                        time.sleep(1)
             else:
                 st.error(f"Ошибка: {response.status_code} — {response.text}")
         except Exception as e:

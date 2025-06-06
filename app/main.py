@@ -10,6 +10,7 @@ from endpoints.home.get import home_route
 from endpoints.user.get import auth_router, get_user_route
 from endpoints.user.post import post_user_route
 from endpoints.ml.post import router_cnn, router_w, router_ml
+from endpoints.ml.get import router_weather, router_h_weather
 
 app = FastAPI()
 
@@ -39,6 +40,8 @@ app.include_router(auth_router)
 app.include_router(router_cnn)
 app.include_router(router_w)
 app.include_router(router_ml)
+app.include_router(router_weather)
+app.include_router(router_h_weather)
 
 
 if __name__ == '__main__':

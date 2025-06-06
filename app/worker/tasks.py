@@ -128,16 +128,20 @@ def process_weather_task(
             # pred_label = LABEL_MAP[pred_class]
             # confidence_pct = f"{prob_positive * 100:.2f}%"
             probs_raw = model.predict_proba(df)[0]  # например [P(no_fire), P(fire)]
+            no_fire_raw = probs_raw[0] if probs_raw[0] is not None else 0.0
+            fire_raw    = probs_raw[1] if probs_raw[1] is not None else 0.0
+
+            # 2) Округляем до 3 знаков
             probs = {
-                "no_fire": float(probs_raw[0]),
-                "fire":    float(probs_raw[1])
+                "nowildfire": round(float(no_fire_raw), 3),
+                "wildfire":   round(float(fire_raw), 3)
             }
 
             # 4e) Определяем вероятность "пожара" и итоговый класс
-            prob_positive = probs["fire"]  # вероятность класса "пожар"
+            prob_positive = float(fire_raw) # вероятность класса "пожар"
             pred_class    = 1 if prob_positive >= threshold else 0
             pred_label    = LABEL_MAP[pred_class]
-            confidence_pct = f"{prob_positive * 100:.2f}%"
+            # confidence_pct = f"{prob_positive * 100:.2f}%"
 
             # 5) Обновляем prediction в БД
             rec = session.query(Prediction).filter_by(fire_event_id=event_id).first()
@@ -153,7 +157,7 @@ def process_weather_task(
                 "prob_positive":  prob_positive,   # float
                 "pred_class":     pred_class,      # 0 или 1
                 "pred_label":     pred_label,      # строка из LABEL_MAP
-                "confidence_pct": confidence_pct   # строка вида "38.50%"
+                # "confidence_pct": confidence_pct   # строка вида "38.50%"
             }
             session.commit()
 
@@ -191,19 +195,58 @@ def process_ensemble_task(
     alpha: float
 ) -> dict:
     """
-    1) Декодирует image_b64 → PIL.Image.
-    2) Получает прогноз погоды (get_daily_weather).
-    3) Если «Невалидный день» → обновляет prediction.status="FAILED" и завершает.
-    4) Иначе:
-       a) p_cnn = вероятность пожара по CNN.
-       b) (model_tabular, threshold, _) = get_model_and_threshold(customer).
-       c) p_tab = вероятность пожара табличной модели.
-       d) p_final = alpha * p_tab + (1 – alpha) * p_cnn.
-       e) Если p_final ≤ 0.5 → категория = 0 (no_fire).
-          Если p_final > 0.5 и p_tab < 0.5 → категория = 2 (anthropogenic_fire).
-          Если p_final > 0.5 и p_tab ≥ 0.5 → категория = 1 (natural_fire).
-    5) Обновляет Prediction: status="SUCCESS", variant="ensemble_<customer>", score=p_final, result=LABEL_MAP_E[категория].
-    6) При ошибке: rollback, статус="FAILED", result=текст ошибки.
+ 1)   Декодирование изображения
+Функция получает картинку в виде base64-строки, декодирует её и открывает как RGB-изображение.
+
+2)Получение погодных данных
+По заданным координатам и дате обращается к сервису погоды.
+– Если сервис вернул “Невалидный день” (нет данных) → сразу отмечает задачу как FAILED и выходит.
+
+3)Оценка вероятности пожара по картинке (CNN)
+– Вызывает CNN-модель, которая возвращает метку (“wildfire” или “no_fire”) и процент уверенности.
+– Если CNN говорит “пожар” с X % → p_cnn = X/100.
+– Если CNN говорит “не пожар” с X % → p_cnn = 1 – X/100.
+
+4)Оценка вероятности пожара по погоде (табличная модель)
+– Загружает заранее обученную метео-модель (CatBoost + XGBoost/RF).
+– На основе текущей погодной таблицы получает p_tab – дробь от 0 до 1, где, например, 0.07 = 7 % вероятность природного пожара.
+
+5)Объединённая (ансамблевая) вероятность
+– Считает p_final = α·p_tab + (1–α)·p_cnn, где α задаётся извне (например, 0.55).
+– Таким образом получается число от 0 до 1 – итоговый “шанс пожара”.
+
+6)Определение итогового класса “пожар/нет пожара”
+– Если p_final ≤ 0.5, считаем, что “нет пожара”.
+– Если p_final > 0.5, значит “пожар”.
+
+7)Уточнение типа пожара
+Если “пожар” (p_final > 0.5), смотрим на p_tab:
+
+Если p_tab < 0.5, погодные условия не поддерживали пожар, но CNN “видит” пламя → антропогенный пожар (поджог, костёр).
+
+Если p_tab ≥ 0.5, и погодная модель тоже “за” → природный пожар (засуха, ветер, жара).
+
+8)Запись результата в базу
+– Извлекает запись по event_id и проставляет:
+• status = “SUCCESS”
+• variant = “ensemble_cnn_<customer>”
+• score = p_final × 100 (в процентах)
+• result = одна из меток (“no_fire”, “natural_fire” или “anthropogenic_fire”)
+
+– В поле payload сохраняет все промежуточные цифры и метки:
+• p_cnn и p_cnn_pct – вероятность “пожара” по CNN и в процентах
+• p_tab и p_tab_pct – вероятность “пожара” по погоде и в процентах
+• p_final и p_final_pct – объединённая вероятность и процент
+• probs = { "no_fire": 1−p_final, "fire": p_final } – развёрнутые шансы
+• pred_class/pred_label – итоговый класс (0/1) и метка по p_final
+• cnn_label/cnn_confidence – что вернула CNN и с какой уверенностью
+• alpha и tab_threshold – параметры ансамбля
+• category/category_label – номер и название категории (0: “no_fire”, 1: “natural_fire”, 2: “anthropogenic_fire”).
+
+9)Обработка ошибок
+– В случае любой ошибки откатывает транзакцию, проставляет status = “FAILED” и сохраняет в result текст ошибки.
+
+
     """
     with create_session() as session:
         try:
@@ -231,7 +274,7 @@ def process_ensemble_task(
                     if missing:
                         rec.result = f"{weather_data['Невалидный день']}. Missing: {missing}"
                     else:
-                        rec.result = weather_data["Невалидный день"]
+                        rec.result = str(weather_data["Невалидный день"])
                 session.commit()
                 return {
                     "event_id": event_id,
@@ -263,7 +306,9 @@ def process_ensemble_task(
             df = pd.DataFrame([features], columns=model_tabular.feature_names_in_)
 
             # 4d) Получаем p_tab (вероятность класса “пожар” табличной модели)
-            p_tab = model_tabular.predict_proba(df)[0][1]
+            probs_tab = model_tabular.predict_proba(df)[0]
+            p_tab = probs_tab[1]
+            tab_label = "wildfire" if probs_tab[1] >= probs_tab[0] else "no_fire"
             logger.info("p_tab: %s", p_tab)
 
             # 4e) Вычисляем p_final = alpha * p_tab + (1 – alpha) * p_cnn
@@ -288,25 +333,28 @@ def process_ensemble_task(
             rec.variant = f"ensemble_cnn_{customer}"
             rec.score = float(p_final) * 100 if p_final is not None else None
             rec.result = LABEL_MAP_E[category]
+            # Собираем словарь "probs" для полного отображения
+            probs_dict = {
+                "no_fire": 1.0 - p_final,
+                "fire":    p_final
+            }
+            confidence_pct = f"{p_final * 100:.2f}%"
             rec.payload = {
                             # Вероятность "пожара" от CNN (дробное число 0.0–1.0 и в процентах отдельно)
                             "p_cnn":           p_cnn,
                             "p_cnn_pct":       f"{p_cnn * 100:.2f}%", 
-
+                            "cnn_label":       label_cnn,     # какая метка вернулась от CNN
                             # Вероятность "пожара" от табличной модели (дробное и процент)
                             "p_tab":           p_tab,
-                            "p_tab_pct":       f"{p_tab * 100:.2f}%", 
+                            "p_tab_pct":       f"{p_tab * 100:.2f}%",
+                            "tab_label": tab_label, 
 
                             # Итоговая объединённая вероятность (дробная и процент)
                             "p_final":         p_final,
-                            "p_final_pct":     f"{p_final * 100:.2f}%", 
+                            "p_final_pct":     f"{p_final * 100:.2f}%",
 
                             # Параметры алгоритма
                             "alpha":           alpha,
-                            "threshold_tau":   0.5,           # мы жёстко используем τ = 0.5
-                            "tab_threshold":   threshold,     # если нужно, можно отобразить порог табличной модели
-                            "cnn_label":       label_cnn,     # какая метка вернулась от CNN
-                            "cnn_confidence":  cnn_conf_str,   # оригинальная строка, например "85.23%"
 
                             # Итоговая категория и её текстовое обозначение
                             "category":        category,
