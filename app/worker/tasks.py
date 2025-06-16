@@ -222,7 +222,7 @@ def process_ensemble_task(
 7)Уточнение типа пожара
 Если “пожар” (p_final > 0.5), смотрим на p_tab:
 
-Если p_tab < 0.5, погодные условия не поддерживали пожар, но CNN “видит” пламя → антропогенный пожар (поджог, костёр).
+Если p_tab < 0.4, погодные условия не поддерживали пожар, но CNN “видит” пламя.
 
 Если p_tab ≥ 0.5, и погодная модель тоже “за” → природный пожар (засуха, ветер, жара).
 
@@ -319,7 +319,7 @@ def process_ensemble_task(
             if p_final <= 0.5:
                 category = 0  # no_fire
             else:
-                if p_tab < 0.5:
+                if p_tab < 0.4:
                     category = 2  # anthropogenic_fire
                 else:
                     category = 1  # natural_fire
