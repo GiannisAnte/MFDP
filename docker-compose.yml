@@ -19,6 +19,8 @@ services:
       - rabbitmq
       - worker
       # - redis
+    networks:
+      - monitoring
 
   web-proxy:
     build:
@@ -29,6 +31,8 @@ services:
     depends_on:
       - app
       # - webui
+    networks:
+      - monitoring
 
   webui:
     build:
@@ -46,6 +50,8 @@ services:
       - STREAMLIT_SERVER_HOST=0.0.0.0
     depends_on:
       - app
+    networks:
+      - monitoring
 
   worker:
     build:
@@ -72,6 +78,8 @@ services:
       - rabbitmq
     deploy:
       replicas: 3
+    networks:
+      - monitoring
 
   database:
     image: postgres:15-alpine
@@ -88,6 +96,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - monitoring
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -103,6 +113,12 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - monitoring
 
 volumes:
   postgres_volume1:
+
+networks:
+  monitoring:
+    external: true
